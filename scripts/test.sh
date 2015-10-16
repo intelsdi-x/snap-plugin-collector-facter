@@ -83,5 +83,5 @@ if [[ $TEST_SUITE == "unit" ]]; then
 	# fi
 elif [[ $TEST_SUITE == "integration" ]]; then
 	gem install facter
-	go test -v --tags=$TEST_SUITE ./...
+	go test -v --tags=integration ./...
 fi
