@@ -133,7 +133,7 @@ func TestFacterInvalidBehavior(t *testing.T) {
 		)
 		So(err, ShouldNotBeNil)
 
-		_, err = f.GetMetricTypes()
+		_, err = f.GetMetricTypes(plugin.PluginConfigType{})
 		So(err, ShouldNotBeNil)
 	})
 	Convey("returns not as much values as asked", t, func() {
@@ -165,7 +165,7 @@ func TestFacterGetMetricsTypes(t *testing.T) {
 
 		Convey("GetMetricsTypes returns no error", func() {
 			// exectues without error
-			metricTypes, err := f.GetMetricTypes()
+			metricTypes, err := f.GetMetricTypes(plugin.PluginConfigType{})
 			So(err, ShouldBeNil)
 			Convey("metricTypesReply should contain more than zero metrics", func() {
 				So(metricTypes, ShouldNotBeEmpty)
