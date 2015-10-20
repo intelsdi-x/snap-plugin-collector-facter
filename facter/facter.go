@@ -2,7 +2,7 @@
 http://www.apache.org/licenses/LICENSE-2.0.txt
 
 
-Copyright 2015 Intel Coporation
+Copyright 2015 Intel Corporation
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -54,7 +54,7 @@ import (
 
 const (
 	name       = "Intel Fact Gathering Plugin (Facter)"
-	version    = 2
+	version    = 3
 	pluginType = plugin.CollectorPluginType
 
 	// parts of returned namescape
@@ -106,7 +106,7 @@ func NewFacterCollector() *Facter {
 // ------------ Pulse plugin interface implementation --------------
 
 // GetMetricTypes returns available metrics types
-func (f *Facter) GetMetricTypes() ([]plugin.PluginMetricType, error) {
+func (f *Facter) GetMetricTypes(_ plugin.PluginConfigType) ([]plugin.PluginMetricType, error) {
 
 	// facts composed of entries
 	facts, err := f.getFacts(
