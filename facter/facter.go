@@ -54,7 +54,7 @@ import (
 
 const (
 	name       = "Intel Fact Gathering Plugin (Facter)"
-	version    = 2
+	version    = 3
 	pluginType = plugin.CollectorPluginType
 
 	// parts of returned namescape
@@ -106,7 +106,7 @@ func NewFacterCollector() *Facter {
 // ------------ Pulse plugin interface implementation --------------
 
 // GetMetricTypes returns available metrics types
-func (f *Facter) GetMetricTypes() ([]plugin.PluginMetricType, error) {
+func (f *Facter) GetMetricTypes(_ plugin.PluginConfigType) ([]plugin.PluginMetricType, error) {
 
 	// facts composed of entries
 	facts, err := f.getFacts(
