@@ -54,7 +54,7 @@ import (
 
 const (
 	name       = "Intel Fact Gathering Plugin (Facter)"
-	version    = 3
+	version    = 4
 	pluginType = plugin.CollectorPluginType
 
 	// parts of returned namescape
