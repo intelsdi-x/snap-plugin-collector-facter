@@ -21,10 +21,10 @@ package main
 
 import (
 	"os"
-	// Import the pulse plugin library
-	"github.com/intelsdi-x/pulse/control/plugin"
+	// Import the snap plugin library
+	"github.com/intelsdi-x/snap/control/plugin"
 	// Import our collector plugin implementation
-	"github.com/intelsdi-x/pulse-plugin-collector-facter/facter"
+	"github.com/intelsdi-x/snap-plugin-collector-facter/facter"
 )
 
 // plugin bootstrap

@@ -17,12 +17,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 -->
 
-## Pulse Fact Collector Plugin 
+## Snap Fact Collector Plugin 
 
 
 ## Description
 
-Collect facts from Facter and convert them into Pulse metrics.
+Collect facts from Facter and convert them into Snap metrics.
 
 Features:
 
@@ -41,5 +41,5 @@ Features:
 
 facter package content:
 
-* facter.go - implements Pulse plugin API (discover&collect)
+* facter.go - implements Snap plugin API (discover&collect)
 * cmd.go - abstraction over external binary to collects fact from Facter 

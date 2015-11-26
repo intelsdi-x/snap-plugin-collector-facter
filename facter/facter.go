@@ -17,12 +17,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-/* This modules converts implements Pulse API to become an plugin.
+/* This modules converts implements Snap API to become an plugin.
 
 legend:
-- metric - represents value of metric from Pulse side
+- metric - represents value of metric from Snap side
 - fact - represents a value about a system gathered from Facter
-- name - is string identifier that refers to metric from the Pulse side, so name points to metric
+- name - is string identifier that refers to metric from the Snap side, so name points to metric
 
  Implementation details:
 
@@ -48,8 +48,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/intelsdi-x/pulse/control/plugin"
-	"github.com/intelsdi-x/pulse/control/plugin/cpolicy"
+	"github.com/intelsdi-x/snap/control/plugin"
+	"github.com/intelsdi-x/snap/control/plugin/cpolicy"
 )
 
 const (
@@ -69,14 +69,14 @@ const (
 )
 
 func Meta() *plugin.PluginMeta {
-	return plugin.NewPluginMeta(name, version, pluginType, []string{plugin.PulseGOBContentType}, []string{plugin.PulseGOBContentType})
+	return plugin.NewPluginMeta(name, version, pluginType, []string{plugin.SnapGOBContentType}, []string{plugin.SnapGOBContentType})
 }
 
 /**********
  * Facter *
  **********/
 
-// Facter implements API to communicate with Pulse
+// Facter implements API to communicate with Snap
 type Facter struct {
 	ttl time.Duration
 	// injects implementation for getting facts - defaults to use getFacts from cmd.go
@@ -103,7 +103,7 @@ func NewFacterCollector() *Facter {
 	}
 }
 
-// ------------ Pulse plugin interface implementation --------------
+// ------------ Snap plugin interface implementation --------------
 
 // GetMetricTypes returns available metrics types
 func (f *Facter) GetMetricTypes(_ plugin.PluginConfigType) ([]plugin.PluginMetricType, error) {
@@ -138,7 +138,7 @@ func (f *Facter) GetMetricTypes(_ plugin.PluginConfigType) ([]plugin.PluginMetri
 }
 
 // Collect collects metrics from external binary a returns them in form
-// acceptable by Pulse, only returns collects that were asked for and return nothing when asked for none
+// acceptable by Snap, only returns collects that were asked for and return nothing when asked for none
 // the order of requested and received metrics isn't guaranted
 func (f *Facter) CollectMetrics(metricTypes []plugin.PluginMetricType) ([]plugin.PluginMetricType, error) {
 
@@ -179,7 +179,7 @@ func (f *Facter) CollectMetrics(metricTypes []plugin.PluginMetricType) ([]plugin
 	metrics := make([]plugin.PluginMetricType, 0, len(facts))
 	for name, value := range facts {
 		namespace := createNamespace(name)
-		metric := *plugin.NewPluginMetricType(namespace, time.Now(), host, value)
+		metric := *plugin.NewPluginMetricType(namespace, time.Now(), host, nil, nil, value)
 		metrics = append(metrics, metric)
 	}
 	return metrics, nil

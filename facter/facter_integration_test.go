@@ -21,7 +21,7 @@ limitations under the License.
 
 /*
 # testing
-go test -v github.com/intelsdi-x/pulse-plugin-collector-facter/facter
+go test -v github.com/intelsdi-x/snap-plugin-collector-facter/facter
 */
 package facter
 
@@ -31,7 +31,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/intelsdi-x/pulse/control/plugin"
+	"github.com/intelsdi-x/snap/control/plugin"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
