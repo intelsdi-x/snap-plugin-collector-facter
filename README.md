@@ -27,7 +27,7 @@ All OSs currently supported by snap:
 * Darwin/amd64
 
 ### Installation
-#### Download psutil plugin binary:
+#### Download facter plugin binary:
 You can get the pre-built binaries for your OS and architecture at snap's [GitHub Releases](https://github.com/intelsdi-x/snap/releases) page.
 
 #### To build the plugin binary:
