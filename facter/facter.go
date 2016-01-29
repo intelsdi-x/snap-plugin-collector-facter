@@ -54,7 +54,7 @@ import (
 
 const (
 	name       = "facter"
-	version    = 5
+	version    = 6
 	pluginType = plugin.CollectorPluginType
 
 	// parts of returned namescape
