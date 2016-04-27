@@ -19,7 +19,7 @@ It's used in the [snap framework](http://github.com:intelsdi-x/snap).
 ## Getting Started
 ### System Requirements
 * [facter](https://github.com/puppetlabs/facter/blob/master/README.md) 
-* [golang 1.4+](https://golang.org/dl/)
+* [golang 1.5+](https://golang.org/dl/) (needed only for building)
 
 ### Operating systems
 All OSs currently supported by snap:
