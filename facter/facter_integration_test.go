@@ -27,11 +27,11 @@ package facter
 
 import (
 	"errors"
-	"strings"
 	"testing"
 	"time"
 
 	"github.com/intelsdi-x/snap/control/plugin"
+	"github.com/intelsdi-x/snap/core"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -40,7 +40,7 @@ import (
 const someFact = "kernel"
 const someValue = "linux 1234"
 
-var existingNamespace = []string{vendor, prefix, someFact}
+var existingNamespace = core.NewNamespace(vendor, prefix, someFact)
 
 func TestFacterCollectMetrics(t *testing.T) {
 	Convey("TestFacterCollect tests", t, func() {
@@ -52,15 +52,15 @@ func TestFacterCollectMetrics(t *testing.T) {
 		}
 
 		Convey("asked for nothgin returns nothing", func() {
-			metricTypes := []plugin.PluginMetricType{}
+			metricTypes := []plugin.MetricType{}
 			metrics, err := f.CollectMetrics(metricTypes)
 			So(err, ShouldBeNil)
 			So(metrics, ShouldBeEmpty)
 		})
 
 		Convey("asked for somehting returns something", func() {
-			metricTypes := []plugin.PluginMetricType{
-				plugin.PluginMetricType{
+			metricTypes := []plugin.MetricType{
+				plugin.MetricType{
 					Namespace_: existingNamespace,
 				},
 			}
@@ -71,16 +71,16 @@ func TestFacterCollectMetrics(t *testing.T) {
 
 			// check just one metric
 			metric := metrics[0]
-			So(metric.Namespace()[2], ShouldResemble, someFact)
+			So(metric.Namespace()[2].Value, ShouldResemble, someFact)
 			So(metric.Data().(string), ShouldEqual, someValue)
 		})
 
 		Convey("ask for inappriopriate metrics", func() {
 			Convey("wrong number of parts", func() {
 				_, err := f.CollectMetrics(
-					[]plugin.PluginMetricType{
-						plugin.PluginMetricType{
-							Namespace_: []string{"where are my other parts"},
+					[]plugin.MetricType{
+						plugin.MetricType{
+							Namespace_: core.NewNamespace("where are my other parts"),
 						},
 					},
 				)
@@ -90,9 +90,9 @@ func TestFacterCollectMetrics(t *testing.T) {
 
 			Convey("wrong vendor", func() {
 				_, err := f.CollectMetrics(
-					[]plugin.PluginMetricType{
-						plugin.PluginMetricType{
-							Namespace_: []string{"nonintelvendor", prefix, someFact},
+					[]plugin.MetricType{
+						plugin.MetricType{
+							Namespace_: core.NewNamespace("nonintelvendor", prefix, someFact),
 						},
 					},
 				)
@@ -102,9 +102,9 @@ func TestFacterCollectMetrics(t *testing.T) {
 
 			Convey("wrong prefix", func() {
 				_, err := f.CollectMetrics(
-					[]plugin.PluginMetricType{
-						plugin.PluginMetricType{
-							Namespace_: []string{vendor, "this is wrong prefix", someFact},
+					[]plugin.MetricType{
+						plugin.MetricType{
+							Namespace_: core.NewNamespace(vendor, "this is wrong prefix", someFact),
 						},
 					},
 				)
@@ -125,15 +125,15 @@ func TestFacterInvalidBehavior(t *testing.T) {
 			return nil, errors.New("dummy error")
 		}
 
-		_, err := f.CollectMetrics([]plugin.PluginMetricType{
-			plugin.PluginMetricType{
+		_, err := f.CollectMetrics([]plugin.MetricType{
+			plugin.MetricType{
 				Namespace_: existingNamespace,
 			},
 		},
 		)
 		So(err, ShouldNotBeNil)
 
-		_, err = f.GetMetricTypes(plugin.PluginConfigType{})
+		_, err = f.GetMetricTypes(plugin.ConfigType{})
 		So(err, ShouldNotBeNil)
 	})
 	Convey("returns not as much values as asked", t, func() {
@@ -145,8 +145,8 @@ func TestFacterInvalidBehavior(t *testing.T) {
 			return nil, nil
 		}
 
-		_, err := f.CollectMetrics([]plugin.PluginMetricType{
-			plugin.PluginMetricType{
+		_, err := f.CollectMetrics([]plugin.MetricType{
+			plugin.MetricType{
 				Namespace_: existingNamespace,
 			},
 		},
@@ -165,7 +165,7 @@ func TestFacterGetMetricsTypes(t *testing.T) {
 
 		Convey("GetMetricsTypes returns no error", func() {
 			// exectues without error
-			metricTypes, err := f.GetMetricTypes(plugin.PluginConfigType{})
+			metricTypes, err := f.GetMetricTypes(plugin.ConfigType{})
 			So(err, ShouldBeNil)
 			Convey("metricTypesReply should contain more than zero metrics", func() {
 				So(metricTypes, ShouldNotBeEmpty)
@@ -173,12 +173,11 @@ func TestFacterGetMetricsTypes(t *testing.T) {
 
 			Convey("at least one metric contains metric namespace \"intel/facter/kernel\"", func() {
 
-				expectedNamespaceStr := strings.Join(existingNamespace, "/")
+				expectedNamespaceStr := existingNamespace.String()
 
 				found := false
 				for _, metricType := range metricTypes {
-					// join because we cannot compare slices
-					if strings.Join(metricType.Namespace(), "/") == expectedNamespaceStr {
+					if metricType.Namespace().String() == expectedNamespaceStr {
 						found = true
 						break
 					}
