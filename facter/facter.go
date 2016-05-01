@@ -44,17 +44,17 @@ package facter
 import (
 	"errors"
 	"fmt"
-	"os"
 	"strings"
 	"time"
 
 	"github.com/intelsdi-x/snap/control/plugin"
 	"github.com/intelsdi-x/snap/control/plugin/cpolicy"
+	"github.com/intelsdi-x/snap/core"
 )
 
 const (
 	name       = "facter"
-	version    = 6
+	version    = 7
 	pluginType = plugin.CollectorPluginType
 
 	// parts of returned namescape
@@ -106,7 +106,7 @@ func NewFacterCollector() *Facter {
 // ------------ Snap plugin interface implementation --------------
 
 // GetMetricTypes returns available metrics types
-func (f *Facter) GetMetricTypes(_ plugin.PluginConfigType) ([]plugin.PluginMetricType, error) {
+func (f *Facter) GetMetricTypes(_ plugin.ConfigType) ([]plugin.MetricType, error) {
 
 	// facts composed of entries
 	facts, err := f.getFacts(
@@ -119,18 +119,18 @@ func (f *Facter) GetMetricTypes(_ plugin.PluginConfigType) ([]plugin.PluginMetri
 			// Facter cannot be found. Since this is called on load we should
 			// not send an error as loading a plugin should not fail based on
 			// whether or not a dynamic path is set.
-			return []plugin.PluginMetricType{}, nil
+			return []plugin.MetricType{}, nil
 		}
 		return nil, err
 	}
 
 	// capacity - we are going to return all the facts
-	metricTypes := make([]plugin.PluginMetricType, 0, len(facts))
+	metricTypes := make([]plugin.MetricType, 0, len(facts))
 
 	// create types with given namespace
 	for name, _ := range facts {
 		namespace := createNamespace(name)
-		metricType := plugin.PluginMetricType{Namespace_: namespace}
+		metricType := plugin.MetricType{Namespace_: namespace}
 		metricTypes = append(metricTypes, metricType)
 	}
 
@@ -140,7 +140,7 @@ func (f *Facter) GetMetricTypes(_ plugin.PluginConfigType) ([]plugin.PluginMetri
 // Collect collects metrics from external binary a returns them in form
 // acceptable by Snap, only returns collects that were asked for and return nothing when asked for none
 // the order of requested and received metrics isn't guaranted
-func (f *Facter) CollectMetrics(metricTypes []plugin.PluginMetricType) ([]plugin.PluginMetricType, error) {
+func (f *Facter) CollectMetrics(metricTypes []plugin.MetricType) ([]plugin.MetricType, error) {
 
 	// parse and check requested names of metrics
 	names := []string{}
@@ -154,7 +154,7 @@ func (f *Facter) CollectMetrics(metricTypes []plugin.PluginMetricType) ([]plugin
 
 		// name of fact - last part of namespace
 		name := namespace[2]
-		names = append(names, name)
+		names = append(names, name.Value)
 	}
 
 	if len(names) == 0 {
@@ -174,12 +174,11 @@ func (f *Facter) CollectMetrics(metricTypes []plugin.PluginMetricType) ([]plugin
 		return nil, errors.New("assertion: getFacts returns more/less than asked!")
 	}
 
-	host, _ := os.Hostname()
 	// convert facts into PluginMetrics
-	metrics := make([]plugin.PluginMetricType, 0, len(facts))
+	metrics := make([]plugin.MetricType, 0, len(facts))
 	for name, value := range facts {
 		namespace := createNamespace(name)
-		metric := *plugin.NewPluginMetricType(namespace, time.Now(), host, nil, nil, value)
+		metric := *plugin.NewMetricType(namespace, time.Now(), nil, "", value)
 		metrics = append(metrics, metric)
 	}
 	return metrics, nil
@@ -199,15 +198,15 @@ func (f *Facter) GetConfigPolicy() (*cpolicy.ConfigPolicy, error) {
 // ------------ helper functions --------------
 
 // validateNamespace checks namespace intel(vendor)/facter(prefix)/FACTNAME
-func validateNamespace(namespace []string) error {
+func validateNamespace(namespace core.Namespace) error {
 	if len(namespace) != 3 {
-		return errors.New(fmt.Sprintf("unknown metricType %s (should containt just 3 segments)", namespace))
+		return errors.New(fmt.Sprintf("unknown metricType %s (should contain just 3 segments)", namespace))
 	}
-	if namespace[0] != vendor {
+	if namespace[0].Value != vendor {
 		return errors.New(fmt.Sprintf("unknown metricType %s (expected vendor %s)", namespace, vendor))
 	}
 
-	if namespace[1] != prefix {
+	if namespace[1].Value != prefix {
 		return errors.New(fmt.Sprintf("unknown metricType %s (expected prefix %s)", namespace, prefix))
 	}
 	return nil
@@ -215,8 +214,8 @@ func validateNamespace(namespace []string) error {
 
 // namspace returns namespace slice of strings
 // composed from: vendor, prefix and fact name
-func createNamespace(name string) []string {
-	return []string{vendor, prefix, name}
+func createNamespace(name string) core.Namespace {
+	return core.NewNamespace(vendor, prefix, name)
 
 }
 
