@@ -47,6 +47,7 @@ import (
 	"strings"
 	"time"
 
+	utils "github.com/intelsdi-x/snap-plugin-utilities/ns"
 	"github.com/intelsdi-x/snap/control/plugin"
 	"github.com/intelsdi-x/snap/control/plugin/cpolicy"
 	"github.com/intelsdi-x/snap/core"
@@ -54,7 +55,7 @@ import (
 
 const (
 	name       = "facter"
-	version    = 7
+	version    = 8
 	pluginType = plugin.CollectorPluginType
 
 	// parts of returned namescape
@@ -124,14 +125,9 @@ func (f *Facter) GetMetricTypes(_ plugin.ConfigType) ([]plugin.MetricType, error
 		return nil, err
 	}
 
-	// capacity - we are going to return all the facts
-	metricTypes := make([]plugin.MetricType, 0, len(facts))
-
-	// create types with given namespace
-	for name, _ := range facts {
-		namespace := createNamespace(name)
-		metricType := plugin.MetricType{Namespace_: namespace}
-		metricTypes = append(metricTypes, metricType)
+	metricTypes, err := parseFacts(facts)
+	if err != nil {
+		return nil, err
 	}
 
 	return metricTypes, nil
@@ -143,6 +139,8 @@ func (f *Facter) GetMetricTypes(_ plugin.ConfigType) ([]plugin.MetricType, error
 func (f *Facter) CollectMetrics(metricTypes []plugin.MetricType) ([]plugin.MetricType, error) {
 
 	// parse and check requested names of metrics
+	// use set to avoid duplicates
+	set := make(map[string]struct{})
 	names := []string{}
 	for _, metricType := range metricTypes {
 		namespace := metricType.Namespace()
@@ -152,9 +150,13 @@ func (f *Facter) CollectMetrics(metricTypes []plugin.MetricType) ([]plugin.Metri
 			return nil, err
 		}
 
-		// name of fact - last part of namespace
+		// name of fact - third part of the namespace
 		name := namespace[2]
-		names = append(names, name.Value)
+		set[name.Value] = struct{}{}
+	}
+
+	for k, _ := range set {
+		names = append(names, k)
 	}
 
 	if len(names) == 0 {
@@ -174,13 +176,11 @@ func (f *Facter) CollectMetrics(metricTypes []plugin.MetricType) ([]plugin.Metri
 		return nil, errors.New("assertion: getFacts returns more/less than asked!")
 	}
 
-	// convert facts into PluginMetrics
-	metrics := make([]plugin.MetricType, 0, len(facts))
-	for name, value := range facts {
-		namespace := createNamespace(name)
-		metric := *plugin.NewMetricType(namespace, time.Now(), nil, "", value)
-		metrics = append(metrics, metric)
+	metrics, err := parseFacts(facts)
+	if err != nil {
+		return nil, err
 	}
+
 	return metrics, nil
 }
 
@@ -197,9 +197,53 @@ func (f *Facter) GetConfigPolicy() (*cpolicy.ConfigPolicy, error) {
 
 // ------------ helper functions --------------
 
+// parseFacts parses facts returned by facter and extracts metricTypes from it
+func parseFacts(f facts) ([]plugin.MetricType, error) {
+
+	var metricTypes []plugin.MetricType
+
+	// create types with given namespace
+	for name, value := range f {
+		if val, ok := value.(map[string]interface{}); ok {
+			ms, err := createMetricsSubArray(name, val)
+			if err != nil {
+				return nil, err
+			}
+			metricTypes = append(metricTypes, ms...)
+		} else {
+			metricType := *plugin.NewMetricType(createNamespace(name), time.Now(), nil, "", value)
+			metricTypes = append(metricTypes, metricType)
+		}
+	}
+
+	return metricTypes, nil
+}
+
+// createMetricsSubArray creates an array of metrics for map values returned by facter
+func createMetricsSubArray(name string, value map[string]interface{}) ([]plugin.MetricType, error) {
+
+	var ms []plugin.MetricType
+
+	namespaces := []string{}
+
+	err := utils.FromMap(value, name, &namespaces)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, namespace := range namespaces {
+		ns := strings.Split(namespace, "/")
+		val := utils.GetValueByNamespace(value, ns[1:])
+		m := *plugin.NewMetricType(createNamespace(ns...), time.Now(), nil, "", val)
+		ms = append(ms, m)
+	}
+
+	return ms, nil
+}
+
 // validateNamespace checks namespace intel(vendor)/facter(prefix)/FACTNAME
 func validateNamespace(namespace core.Namespace) error {
-	if len(namespace) != 3 {
+	if len(namespace) < 3 {
 		return errors.New(fmt.Sprintf("unknown metricType %s (should contain just 3 segments)", namespace))
 	}
 	if namespace[0].Value != vendor {
@@ -214,9 +258,9 @@ func validateNamespace(namespace core.Namespace) error {
 
 // namspace returns namespace slice of strings
 // composed from: vendor, prefix and fact name
-func createNamespace(name string) core.Namespace {
-	return core.NewNamespace(vendor, prefix, name)
-
+func createNamespace(name ...string) core.Namespace {
+	name = append([]string{vendor, prefix}, name...)
+	return core.NewNamespace(name...)
 }
 
 // helper type to deal with json values which additionally stores last update moment

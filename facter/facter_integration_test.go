@@ -27,6 +27,7 @@ package facter
 
 import (
 	"errors"
+	"strings"
 	"testing"
 	"time"
 
@@ -51,14 +52,14 @@ func TestFacterCollectMetrics(t *testing.T) {
 			return facts{someFact: someValue}, nil
 		}
 
-		Convey("asked for nothgin returns nothing", func() {
+		Convey("asked for nothing returns nothing", func() {
 			metricTypes := []plugin.MetricType{}
 			metrics, err := f.CollectMetrics(metricTypes)
 			So(err, ShouldBeNil)
 			So(metrics, ShouldBeEmpty)
 		})
 
-		Convey("asked for somehting returns something", func() {
+		Convey("asked for something returns something", func() {
 			metricTypes := []plugin.MetricType{
 				plugin.MetricType{
 					Namespace_: existingNamespace,
@@ -162,6 +163,7 @@ func TestFacterGetMetricsTypes(t *testing.T) {
 	Convey("GetMetricTypes functionallity", t, func() {
 
 		f := NewFacterCollector()
+		So(f, ShouldNotBeNil)
 
 		Convey("GetMetricsTypes returns no error", func() {
 			// executes without error
@@ -186,6 +188,36 @@ func TestFacterGetMetricsTypes(t *testing.T) {
 					t.Error("It was expected to find at least on intel/facter/kernel metricType (but it wasn't there)")
 				}
 			})
+
+			Convey("Then list of metrics is returned", func() {
+				So(len(metricTypes), ShouldNotBeNil)
+				namespaces := []string{}
+				for _, m := range metricTypes {
+					namespaces = append(namespaces, strings.Join(m.Namespace().Strings(), "/"))
+				}
+
+				So(namespaces, ShouldContain, "intel/facter/timezone")
+				So(namespaces, ShouldContain, "intel/facter/operatingsystem")
+				So(namespaces, ShouldContain, "intel/facter/blockdevices")
+				So(namespaces, ShouldContain, "intel/facter/uptime_seconds")
+				So(namespaces, ShouldContain, "intel/facter/id")
+				So(namespaces, ShouldContain, "intel/facter/osfamily")
+				So(namespaces, ShouldContain, "intel/facter/kernelrelease")
+				So(namespaces, ShouldContain, "intel/facter/facterversion")
+				So(namespaces, ShouldContain, "intel/facter/hardwaremodel")
+				So(namespaces, ShouldContain, "intel/facter/hostname")
+				So(namespaces, ShouldContain, "intel/facter/memorysize")
+				So(namespaces, ShouldContain, "intel/facter/interfaces")
+				So(namespaces, ShouldContain, "intel/facter/ipaddress")
+				So(namespaces, ShouldContain, "intel/facter/kernel")
+				So(namespaces, ShouldContain, "intel/facter/os/name")
+				So(namespaces, ShouldContain, "intel/facter/physicalprocessorcount")
+				So(namespaces, ShouldContain, "intel/facter/memorysize_mb")
+				So(namespaces, ShouldContain, "intel/facter/kernelmajversion")
+				So(namespaces, ShouldContain, "intel/facter/kernelrelease")
+				So(namespaces, ShouldContain, "intel/facter/processors/models/0")
+			})
 		})
+
 	})
 }
