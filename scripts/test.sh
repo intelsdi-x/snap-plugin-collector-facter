@@ -28,7 +28,7 @@
 # Capture what test we should run
 TEST_SUITE=$1
 
-if [[ $TEST_SUITE == "unit" ]]; then
+if [[ $TEST_SUITE == "legacy" ]]; then
 	go get github.com/axw/gocov/gocov
 	go get github.com/mattn/goveralls
 	go get -u github.com/golang/lint/golint
@@ -70,7 +70,7 @@ if [[ $TEST_SUITE == "unit" ]]; then
 	for dir in $(find . -maxdepth 10 -not -path './.git*' -not -path '*/_*' -not -path './examples/*' -not -path './scripts/*' -not -path './build/*' -not -path './Godeps/*' -type d);
 	do
 		if ls $dir/*.go &> /dev/null; then
-	    		go test --tags=unit -covermode=count -coverprofile=$dir/profile.tmp $dir
+	    		go test --tags=legacy -covermode=count -coverprofile=$dir/profile.tmp $dir
 	    		if [ -f $dir/profile.tmp ]
 	    		then
 	        		cat $dir/profile.tmp | tail -n +2 >> profile.cov

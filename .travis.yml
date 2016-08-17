@@ -3,15 +3,22 @@ language: go
 go:
 - 1.5.4
 - 1.6.2
-before_install:
-- go get github.com/tools/godep
-- if [ ! -d $SNAP_PLUGIN_SOURCE ]; then mkdir -p $HOME/gopath/src/github.com/intelsdi-x; ln -s $TRAVIS_BUILD_DIR $SNAP_PLUGIN_SOURCE; fi # CI for forks not from intelsdi-x
 env:
   global:
     - SNAP_PLUGIN_SOURCE=/home/travis/gopath/src/github.com/intelsdi-x/snap-plugin-collector-facter
+    - ORG_PATH=/home/travis/gopath/src/github.com/intelsdi-x
+    - GO15VENDOREXPERIMENT=1
   matrix:
-    - TEST=unit
     - TEST=integration
+    - TEST=legacy
+    - TEST=build
+matrix:
+  exclude:
+    - go: 1.5.4
+      env: TEST_TYPE=build
+before_install:
+- go get github.com/tools/godep
+- if [ ! -d $SNAP_PLUGIN_SOURCE ]; then mkdir -p $HOME/gopath/src/github.com/intelsdi-x; ln -s $TRAVIS_BUILD_DIR $SNAP_PLUGIN_SOURCE; fi # CI for forks not from intelsdi-x
 install:
 - export TMPDIR=$HOME/tmp
 - mkdir -p $TMPDIR
@@ -19,6 +26,24 @@ install:
 - make deps
 script:
 - make check TEST=$TEST 2>&1 # Run test suite
+before_deploy:
+  - make all
+  - "./scripts/pre_deploy.sh"
+deploy:
+  provider: s3
+  access_key_id: AKIAINMB43VSSPFZISAA
+  secret_access_key:
+    secure: WBtw4WY/iWEIWjQJrFxSRpLHz46/Lfm4qKUSVAo9kwrh7ROuwX2Yrnv3LQiwCHew1iPoFHCe935ScLkKG0oeswWynEHF4LwZNvZOCqIdW8ck411pJVUj0SviPyAYKvhc3uU5frcHLxFtDybXvLU2LQwWtL5HN7/636wQplOLAqOxMNvoE+pVNa9poUqGIr3/Bbhsa8Ay9E0gMGf9rF8nPpcPlHSKP+av1oOfY0W8xj0eY9M7IiFMzJFyeEijG1wMpuwpVGabgQ+axNBOd8kuhARyQBxfExEroFoq4AQyNqp8ybZ/Veit6B0lz09tYoYY62CcAZ0GU5UNB7SMPnwWNZUR3Zh6oDqWRkOPIF2DCmEilIEPvamjLnc0H3T1VXRUevIWZjKUyKVR/jtUD31DMZ2JQksjszUMmnLWmtaYyTWrhvsGZ26Ss+Tezone2jPn9s25QbsPwQq3E43TEI5oXcuBsbGrceW0ddjN6G1rGmOzO63+K61Upq06aLK4qy6OcHkjdWyUeyfrLaD5SSa5ZD9fkRq/yxh3VJhWNO3HtxeD6krtsPAieJaMy+VB6MUFfdZa7UUTevl6T4oZD/HcefXF9rU4gd1FOXdvX+b3Ogx9LWt0CsKL34JUrKnXs1k5cKw5nIr7YqIdZM15909AIUXfjy4eKzaWj+ZGyiwQNno=
+  bucket: snap.ci.snap-telemetry.io
+  region: us-west-2
+  skip_cleanup: true
+  local-dir: build
+  upload-dir: plugin
+  acl: public_read
+  on:
+    repo: intelsdi-x/snap-plugin-collector-facter
+    branch: build
+    condition: $TEST_TYPE=build && $TRAVIS_GO_VERSION="1.6.2"
 notifications:
   slack:
     secure: VkbZLIc2RH8yf3PtIAxUNPdAu3rQQ7yQx0GcK124JhbEnZGaHyK615V0rbG7HcVmYKGPdB0cXqZiLBDKGqGKb2zR1NepOe1nF03jxGSpPq8jIFeEXSJGEYGL34ScDzZZGuG6qwbjFcXiW5lqn6t8igzp7v2+URYBaZo5ktCS2xY=
