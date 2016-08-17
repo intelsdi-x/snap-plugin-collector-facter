@@ -9,8 +9,7 @@ env:
     - ORG_PATH=/home/travis/gopath/src/github.com/intelsdi-x
     - GO15VENDOREXPERIMENT=1
   matrix:
-    - TEST=integration
-    - TEST=legacy
+    - TEST=medium
     - TEST=build
 matrix:
   exclude:
