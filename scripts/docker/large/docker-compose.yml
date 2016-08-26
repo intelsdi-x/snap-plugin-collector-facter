@@ -1,0 +1,9 @@
+version: '2'
+services:
+  main:
+    container_name: facter_large_test
+    image: mkrolik/alpine-python-facter:latest
+    network_mode: "host"
+    volumes:
+      - ${PLUGIN_SRC}:/snap-plugin-collector-facter
+    entrypoint: sh -c 'python /snap-plugin-collector-facter/scripts/test/large.py'

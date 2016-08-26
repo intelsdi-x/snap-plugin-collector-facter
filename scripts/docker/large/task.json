@@ -1,0 +1,18 @@
+{
+    "version": 1,
+    "schedule": {
+        "type": "simple",
+        "interval": "1s"
+    },
+    "workflow": {
+        "collect": {
+            "metrics": {
+                "/intel/facter/id": {}
+           },
+            "config": {
+            },
+            "process": null,
+            "publish": null
+        }
+    }
+}
