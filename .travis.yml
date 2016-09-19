@@ -1,48 +1,75 @@
-sudo: false
+# File managed by pluginsync
+sudo: true
+dist: trusty
 language: go
 go:
-- 1.5.4
-- 1.6.2
+- 1.6.3
+- 1.7.1
 env:
   global:
-    - SNAP_PLUGIN_SOURCE=/home/travis/gopath/src/github.com/intelsdi-x/snap-plugin-collector-facter
-    - ORG_PATH=/home/travis/gopath/src/github.com/intelsdi-x
-    - GO15VENDOREXPERIMENT=1
+  - ORG_PATH=/home/travis/gopath/src/github.com/intelsdi-x
+  - SNAP_PLUGIN_SOURCE=/home/travis/gopath/src/github.com/${TRAVIS_REPO_SLUG}
   matrix:
-    - TEST=medium
-    - TEST=build
+  - TEST_TYPE=small
+  - TEST_TYPE=medium
+  - TEST_TYPE=build
 matrix:
   exclude:
-    - go: 1.5.4
-      env: TEST_TYPE=build
+  - go: 1.6.3
+    env: TEST_TYPE=build
 before_install:
-- go get github.com/tools/godep
-- if [ ! -d $SNAP_PLUGIN_SOURCE ]; then mkdir -p $HOME/gopath/src/github.com/intelsdi-x; ln -s $TRAVIS_BUILD_DIR $SNAP_PLUGIN_SOURCE; fi # CI for forks not from intelsdi-x
+- wget https://apt.puppetlabs.com/puppetlabs-release-pc1-wheezy.deb && sudo dpkg -i puppetlabs-release-pc1-wheezy.deb
+- sudo apt-get update && sudo apt-get install -y puppet-agent
+- sudo ln -s /opt/puppetlabs/bin/facter /usr/local/bin/facter
+- facter
+- "[[ -d $SNAP_PLUGIN_SOURCE ]] || mkdir -p $ORG_PATH && ln -s $TRAVIS_BUILD_DIR $SNAP_PLUGIN_SOURCE"
 install:
-- export TMPDIR=$HOME/tmp
-- mkdir -p $TMPDIR
-- cd $SNAP_PLUGIN_SOURCE # change dir into source
+- cd $SNAP_PLUGIN_SOURCE
 - make deps
 script:
-- make check TEST=$TEST 2>&1 # Run test suite
+- make check 2>&1
+notifications:
+  email: false
+  slack:
+    secure: VkbZLIc2RH8yf3PtIAxUNPdAu3rQQ7yQx0GcK124JhbEnZGaHyK615V0rbG7HcVmYKGPdB0cXqZiLBDKGqGKb2zR1NepOe1nF03jxGSpPq8jIFeEXSJGEYGL34ScDzZZGuG6qwbjFcXiW5lqn6t8igzp7v2+URYBaZo5ktCS2xY=
 before_deploy:
-  - make all
-  - "./scripts/pre_deploy.sh"
+- "./scripts/pre_deploy.sh"
 deploy:
-  provider: s3
+- provider: s3
   access_key_id: AKIAINMB43VSSPFZISAA
   secret_access_key:
-    secure: WBtw4WY/iWEIWjQJrFxSRpLHz46/Lfm4qKUSVAo9kwrh7ROuwX2Yrnv3LQiwCHew1iPoFHCe935ScLkKG0oeswWynEHF4LwZNvZOCqIdW8ck411pJVUj0SviPyAYKvhc3uU5frcHLxFtDybXvLU2LQwWtL5HN7/636wQplOLAqOxMNvoE+pVNa9poUqGIr3/Bbhsa8Ay9E0gMGf9rF8nPpcPlHSKP+av1oOfY0W8xj0eY9M7IiFMzJFyeEijG1wMpuwpVGabgQ+axNBOd8kuhARyQBxfExEroFoq4AQyNqp8ybZ/Veit6B0lz09tYoYY62CcAZ0GU5UNB7SMPnwWNZUR3Zh6oDqWRkOPIF2DCmEilIEPvamjLnc0H3T1VXRUevIWZjKUyKVR/jtUD31DMZ2JQksjszUMmnLWmtaYyTWrhvsGZ26Ss+Tezone2jPn9s25QbsPwQq3E43TEI5oXcuBsbGrceW0ddjN6G1rGmOzO63+K61Upq06aLK4qy6OcHkjdWyUeyfrLaD5SSa5ZD9fkRq/yxh3VJhWNO3HtxeD6krtsPAieJaMy+VB6MUFfdZa7UUTevl6T4oZD/HcefXF9rU4gd1FOXdvX+b3Ogx9LWt0CsKL34JUrKnXs1k5cKw5nIr7YqIdZM15909AIUXfjy4eKzaWj+ZGyiwQNno=
+    secure: CC+5bA+ShhkJ6E2t+TSm3M7uuflqQvKSrATATxlmuf0UXG+ph0PQwQFsFx+RtOkFM4DyvuqKjmp3E90Ixc6LZUFUMY6MLxU08r4l1V10NuNStufCF49UwopEqOECXMa9Ln2CRvZb23+zIepQEWLIYyn1jDL2VuOlUgMiAmsCfRkFCeOq2g8YJ4MA0tbJzG0vTWtWGWr0aErY9A47moF8Stx/7oSP3YOYx2QVSSJCJ440KD/VtXNstQW7dkz9YPT2Bruepelv/bHBlrV8/L+rj+Bdxhd8dx1nPZpga0ytFzHRrJ1AH60vvWEC4WN12dxL3MlTL/ghITDHkP6BSNwRforP4nYyaZM/Atday5sFW8o2Qcngw8KQFzbs7WTXpDcGdwaW4xUbx/PHVOg/7pZ4hO3nYV8wmXl6Oz36g0MqA/H0lufipxgqVz9UBfv2Ao5rh6LWe2cbHXRcN0A2Hrooh8ktaY0UCPXPVOfAcPhQ+7S4ZYPqurKHWaKkip9slpz/WbyjGNf9CazuDcEG6H6AVB+dLO57333k3N55FCU7nlmWF0LMVvky1IBsyqnWW13cAueQIVRx1z4jma2DOxXEzVuHAtirjnrLf/pTUhaPjAxA7V59HtXZd7Brwa/y7muOIrtBX7wHiq43652Hy6UfsUFAv0huPubZfGAadKWofBY=
   bucket: snap.ci.snap-telemetry.io
   region: us-west-2
   skip_cleanup: true
-  local-dir: build
-  upload-dir: plugin
+  local-dir: s3
+  upload-dir: plugins
   acl: public_read
   on:
     repo: intelsdi-x/snap-plugin-collector-facter
-    branch: build
-    condition: $TEST_TYPE=build && $TRAVIS_GO_VERSION="1.6.2"
-notifications:
-  slack:
-    secure: VkbZLIc2RH8yf3PtIAxUNPdAu3rQQ7yQx0GcK124JhbEnZGaHyK615V0rbG7HcVmYKGPdB0cXqZiLBDKGqGKb2zR1NepOe1nF03jxGSpPq8jIFeEXSJGEYGL34ScDzZZGuG6qwbjFcXiW5lqn6t8igzp7v2+URYBaZo5ktCS2xY=
+    branch: master
+    condition: $TEST_TYPE = "build" && $TRAVIS_GO_VERSION = "1.7.1"
+- provider: s3
+  access_key_id: AKIAINMB43VSSPFZISAA
+  secret_access_key:
+    secure: CC+5bA+ShhkJ6E2t+TSm3M7uuflqQvKSrATATxlmuf0UXG+ph0PQwQFsFx+RtOkFM4DyvuqKjmp3E90Ixc6LZUFUMY6MLxU08r4l1V10NuNStufCF49UwopEqOECXMa9Ln2CRvZb23+zIepQEWLIYyn1jDL2VuOlUgMiAmsCfRkFCeOq2g8YJ4MA0tbJzG0vTWtWGWr0aErY9A47moF8Stx/7oSP3YOYx2QVSSJCJ440KD/VtXNstQW7dkz9YPT2Bruepelv/bHBlrV8/L+rj+Bdxhd8dx1nPZpga0ytFzHRrJ1AH60vvWEC4WN12dxL3MlTL/ghITDHkP6BSNwRforP4nYyaZM/Atday5sFW8o2Qcngw8KQFzbs7WTXpDcGdwaW4xUbx/PHVOg/7pZ4hO3nYV8wmXl6Oz36g0MqA/H0lufipxgqVz9UBfv2Ao5rh6LWe2cbHXRcN0A2Hrooh8ktaY0UCPXPVOfAcPhQ+7S4ZYPqurKHWaKkip9slpz/WbyjGNf9CazuDcEG6H6AVB+dLO57333k3N55FCU7nlmWF0LMVvky1IBsyqnWW13cAueQIVRx1z4jma2DOxXEzVuHAtirjnrLf/pTUhaPjAxA7V59HtXZd7Brwa/y7muOIrtBX7wHiq43652Hy6UfsUFAv0huPubZfGAadKWofBY=
+  bucket: snap.ci.snap-telemetry.io
+  region: us-west-2
+  skip_cleanup: true
+  local-dir: s3
+  upload-dir: plugins
+  acl: public_read
+  on:
+    repo: intelsdi-x/snap-plugin-collector-facter
+    tags: true
+    condition: $TEST_TYPE = "build" && $TRAVIS_GO_VERSION = "1.7.1"
+- provider: releases
+  api_key:
+    secure: mp2yosO83q5W8v1Z3nlPTCrSuwpTp+SZoTZ1UpkdmGyUUVPKH3Z2TuSVW3prv8LAi8rRDWJCk7/dUDmdVrLwPKDTXRX4BHjoYAU8Xy7Y6ToMlRfR9q3k99VYxIVAa2w60mGHkOYZmWcxYjFwiLFL4BSK/qmevDlXGK7z6HMOU+Xn46MaZBACyobTu+NR2RdBl9baQq0TF1VSAhR6hQKmiwrXVf8IwDlF12AKNEdmvKxxxRaVcv7tW+8EEAowuWb8omaxwHj7jAVVH6qTiO2VqREK8UFCof33JJjDkt5Zl8E2XqJGF7NVMt2dfVtpQvWNvJK8skfeRhZdTvDjQbcwiHQbJpN+GmmD+FtJxyIHogeWLiF6BOYqYePUISIEmx+z1gGdf2hcSf970Oud4bib7wyq4JWGLs60YUY6GgNOV2tNIo3Jo7wW3oIIsXHLFblI1q9Re8AEUV1reBWJKhdCj2W30QCm0DcP6lWcdOF710cnbeHpzTNFlXGKGkpVGiwM9o3hrvPE3VLc6ztm0Wg4P8VyhoccDqX5smhm1vKITnpoO7o583tknPiJvmpNTjhqnqihID89aStnVyiS2CFUe6Hv5La5EgFi0B03hC44w4C92UYV7tf6G6YDRnpbyDEok6X0Eb+ac/Gs6rWSXxnh+9+22Ti07X2TPYoNqHSWFoY=
+  file:
+    - release/snap-plugin-collector-facter_linux_x86_64
+  skip_cleanup: true
+  on:
+    repo: intelsdi-x/snap-plugin-collector-facter
+    tags: true
+    condition: $TEST_TYPE = "build" && $TRAVIS_GO_VERSION = "1.7.1"
