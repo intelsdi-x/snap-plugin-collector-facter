@@ -18,8 +18,10 @@ It's used in the [snap framework](http://github.com:intelsdi-x/snap).
 
 ## Getting Started
 ### System Requirements
-* [facter](https://github.com/puppetlabs/facter/blob/master/README.md) 
+* [facter 3.x](https://github.com/puppetlabs/facter/blob/master/README.md)
 * [golang 1.5+](https://golang.org/dl/) (needed only for building)
+
+NOTE: Facter 2.x may also work, but it's currently not part of our test matrix.
 
 ### Operating systems
 All OSs currently supported by snap:
