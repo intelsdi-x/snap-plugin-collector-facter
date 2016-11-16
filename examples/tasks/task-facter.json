@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "schedule": {
+    "type": "simple",
+    "interval": "1s"
+  },
+  "workflow": {
+    "collect": {
+      "metrics": {
+        "/intel/facter/architecture": {},
+        "/intel/facter/bios_release_date": {},
+        "/intel/facter/bios_vendor": {},
+        "/intel/facter/bios_version": {}
+      },
+      "publish": [
+        {
+          "plugin_name": "file",
+          "config": {
+            "file": "/tmp/published_facter"
+          }
+        }
+      ]
+    }
+  }
+}
+

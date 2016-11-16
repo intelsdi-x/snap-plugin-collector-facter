@@ -1,7 +1,7 @@
-# snap collector plugin - facter
-This plugin collects facts about nodes (systems) such as hardware details, network settings, OS type and version, IP addresses, MAC addresses, SSH keys and more from Facter and converts them into snap metrics. 
+# Snap collector plugin - facter
+This plugin collects facts about nodes (systems) such as hardware details, network settings, OS type and version, IP addresses, MAC addresses, SSH keys and more from Facter and converts them into Snap metrics.
 
-It's used in the [snap framework](http://github.com:intelsdi-x/snap).
+It's used in the [Snap framework](http://github.com:intelsdi-x/snap).
 
 1. [Getting Started](#getting-started)
   * [System Requirements](#system-requirements)
@@ -24,15 +24,17 @@ It's used in the [snap framework](http://github.com:intelsdi-x/snap).
 NOTE: Facter 2.x may also work, but it's currently not part of our test matrix.
 
 ### Operating systems
-All OSs currently supported by snap:
+All OSs currently supported by Snap:
 * Linux/amd64
 * Darwin/amd64
 
 ### Installation
-#### Download facter plugin binary:
-You can get the pre-built binaries for your OS and architecture at snap's [GitHub Releases](https://github.com/intelsdi-x/snap/releases) page.
+#### Download the plugin binary:
+
+You can get the pre-built binaries for your OS and architecture from the plugin's [GitHub Releases](https://github.com/intelsdi-x/snap-plugin-collector-facter/releases) page. Download the plugin from the latest release and load it into `snapd` (`/opt/snap/plugins` is the default location for Snap packages).
 
 #### To build the plugin binary:
+
 Fork https://github.com/intelsdi-x/snap-plugin-collector-facter
 Clone repo into `$GOPATH/src/github.com/intelsdi-x/`:
 
@@ -40,24 +42,23 @@ Clone repo into `$GOPATH/src/github.com/intelsdi-x/`:
 $ git clone https://github.com/<yourGithubID>/snap-plugin-collector-facter.git
 ```
 
-Build the plugin by running make within the cloned repo:
+Build the Snap facter plugin by running make within the cloned repo:
 ```
 $ make
 ```
-This builds the plugin in `/build/rootfs/`
+This builds the plugin in `./build/`
 
 ### Configuration and Usage
-* Set up the [snap framework](https://github.com/intelsdi-x/snap/blob/master/README.md#getting-started)
-* Ensure `$SNAP_PATH` is exported  
-`export SNAP_PATH=$GOPATH/src/github.com/intelsdi-x/snap/build`
+* Set up the [Snap framework](https://github.com/intelsdi-x/snap#getting-started)
+* Load the plugin and create a task, see example in [Examples](#examples).
 
 ## Documentation
 There are a number of other resources you can review to learn to use this plugin:
 
 * [facter](http://docs.puppetlabs.com/facter/3.1/core_facts.html) 
-* [snap facter integration test](https://github.com/intelsdi-x/snap-plugin-collector-facter/blob/master/facter/facter_integration_test.go)
-* [snap facter unit test](https://github.com/intelsdi-x/snap-plugin-collector-facter/blob/master/facter/facter_test.go)
-* [snap facter examples](#Examples)
+* [Snap facter integration test](facter/facter_integration_test.go)
+* [Snap facter unit test](facter/facter_test.go)
+* [Snap facter examples](#Examples)
 
 ### Collected Metrics
 This plugin has the ability to gather the following metrics:
@@ -155,93 +156,32 @@ Namespace | Description
 /intel/facter/virtual |
 
 ### Examples
-Example running facter, passthru processor, and writing data to a file.
+Example of running Snap facter collector and writing data to file.
 
-This is done from the snap directory.
+Ensure [Snap daemon is running](https://github.com/intelsdi-x/snap#running-snap):
+* initd: `service snap-telemetry start`
+* systemd: `systemctl start snap-telemetry`
+* command line: `snapd -l 1 -t 0 &`
 
-In one terminal window, open the snap daemon (in this case with logging set to 1 and trust disabled):
+Download and load Snap plugins:
 ```
-$ $SNAP_PATH/bin/snapd -l 1 -t 0
-```
-
-In another terminal window:
-Load facter plugin
-```
-$ $SNAP_PATH/bin/snapctl plugin load build/plugin/snap-collector-facter
-```
-See available metrics for your system
-```
-$ $SNAP_PATH/bin/snapctl metric list
+$ wget http://snap.ci.snap-telemetry.io/plugins/snap-plugin-collector-facter/latest/linux/x86_64/snap-plugin-collector-facter
+$ wget http://snap.ci.snap-telemetry.io/plugins/snap-plugin-publisher-file/latest/linux/x86_64/snap-plugin-publisher-file
+$ chmod 755 snap-plugin-*
+$ snapctl plugin load snap-plugin-collector-facter
+$ snapctl plugin load snap-plugin-publisher-file
 ```
 
-Create a task manifest file (e.g. `facter-file.json`):    
-```json
-{
-    "version": 1,
-    "schedule": {
-        "type": "simple",
-        "interval": "1s"
-    },
-    "workflow": {
-        "collect": {
-            "metrics": {
-                "/intel/facter/architecture": {},
-                "/intel/facter/bios_release_date": {},
-                "/intel/facter/bios_vendor": {},
-                "/intel/facter/bios_version": {}
-            },
-            "config": {
-                "/intel/mock": {
-                    "password": "secret",
-                    "user": "root"
-                }
-            },
-            "process": [
-                {
-                    "plugin_name": "passthru",
-                    "process": null,
-                    "publish": [
-                        {
-                            "plugin_name": "file",
-                            "config": {
-                                "file": "/tmp/published_facter"
-                            }
-                        }
-                    ],
-                    "config": null
-                }
-            ],
-            "publish": null
-        }
-    }
-}
+See all available metrics:
+
+```
+$ snapctl metric list
 ```
 
-Load passthru plugin for processing:
+Download an [example task file](examples/tasks/task-facter.json) and load it:
 ```
-$ $SNAP_PATH/bin/snapctl plugin load build/plugin/snap-processor-passthru
-Plugin loaded
-Name: passthru
-Version: 1
-Type: processor
-Signed: false
-Loaded Time: Fri, 20 Nov 2015 11:44:03 PST
-```
-
-Load file plugin for publishing:
-```
-$ $SNAP_PATH/bin/snapctl plugin load build/plugin/snap-publisher-file
-Plugin loaded
-Name: file
-Version: 3
-Type: publisher
-Signed: false
-Loaded Time: Fri, 20 Nov 2015 11:45:03 PST
-```
-
-Create task:
-```
-$ $SNAP_PATH/bin/snapctl task create -t examples/tasks/facter-file.json
+$ curl -sfLO https://raw.githubusercontent.com/intelsdi-x/snap-plugin-collector-facter/master/examples/tasks/task-facter.json
+$ snapctl task create -t task-facter.json
 Using task manifest to create task
 Task created
 ID: 02dd7ff4-8106-47e9-8b86-70067cd0a850
@@ -249,7 +189,8 @@ Name: Task-02dd7ff4-8106-47e9-8b86-70067cd0a850
 State: Running
 ```
 
-See file output (this is just part of the file):
+See realtime output from `snapctl task watch <task_id>` (CTRL+C to exit)
+
 ```
 2015-12-02 08:49:33.679791899 -0500 EST|[intel facter architecture]|amd64|gklab-044-107
 2015-12-02 08:49:33.679792606 -0500 EST|[intel facter bios_release_date]|07/14/2011|gklab-044-107
@@ -274,7 +215,9 @@ ID: 02dd7ff4-8106-47e9-8b86-70067cd0a850
 There isn't a current roadmap for this plugin, but it is in active development. As we launch this plugin, we do not have any outstanding requirements for the next release. If you have a feature request, please add it as an [issue](https://github.com/intelsdi-x/snap-plugin-collector-facter/issues/new) and/or submit a [pull request](https://github.com/intelsdi-x/snap-plugin-collector-facter/pulls).
 
 ## Community Support
-This repository is one of **many** plugins in **snap**, a powerful telemetry framework. See the full project at http://github.com/intelsdi-x/snap To reach out to other users, head to the [main framework](https://github.com/intelsdi-x/snap#community-support)
+This repository is one of **many** plugins in **Snap**, a powerful telemetry framework. See the full project at http://github.com/intelsdi-x/snap.
+
+To reach out to other users, head to the [main framework](https://github.com/intelsdi-x/snap#community-support).
 
 ## Contributing
 We love contributions!
@@ -282,7 +225,7 @@ We love contributions!
 There's more than one way to give back, from examples to blogs to code updates. See our recommended process in [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## License
-[snap](http://github.com:intelsdi-x/snap), along with this plugin, is an Open Source software released under the Apache 2.0 [License](LICENSE).
+[Snap](http://github.com:intelsdi-x/snap), along with this plugin, is an Open Source software released under the Apache 2.0 [License](LICENSE).
 
 ## Acknowledgements
 * Author: [@ppalucki](https://github.com/ppalucki)
