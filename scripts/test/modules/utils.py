@@ -30,8 +30,8 @@ def download_binaries(bins):
 
 def set_binaries():
     bins = Binaries()
-    bins.snapd = Snapd(SNAP_URL, SNAP_DIR)
-    bins.snapctl = Snapctl(SNAPCTL_URL, SNAP_DIR)
+    bins.snapteld = Snapteld(SNAP_URL, SNAP_DIR)
+    bins.snaptel = Snaptel(SNAPTEL_URL, SNAP_DIR)
     bins.plugins = [Binary(PLUGIN_URL, PLUGIN_DIR)]
     return bins
 
