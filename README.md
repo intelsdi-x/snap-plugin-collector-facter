@@ -206,7 +206,7 @@ See realtime output from `snaptel task watch <task_id>` (CTRL+C to exit)
 
 Stop task:
 ```
-$ $SNAP_PATH/bin/snaptel task stop 02dd7ff4-8106-47e9-8b86-70067cd0a850
+$ snaptel task stop 02dd7ff4-8106-47e9-8b86-70067cd0a850
 Task stopped:
 ID: 02dd7ff4-8106-47e9-8b86-70067cd0a850
 ```
