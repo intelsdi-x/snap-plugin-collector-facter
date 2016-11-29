@@ -27,9 +27,9 @@ from logger import log
 PLUGIN_DIR = "/etc/snap/plugins"
 SNAP_DIR = "/usr/local/bin"
 
-PLUGIN_URL = "http://snap.ci.snap-telemetry.io/plugin/build/latest/snap-plugin-collector-facter"
-SNAP_URL = "http://snap.ci.snap-telemetry.io/snap/master/latest/snapd"
-SNAPCTL_URL = "http://snap.ci.snap-telemetry.io/snap/master/latest/snapctl"
+PLUGIN_URL = "http://snap.ci.snap-telemetry.io/plugins/snap-plugin-collector-facter/latest/linux/x86_64/snap-plugin-collector-facter"
+SNAP_URL = "http://snap.ci.snap-telemetry.io/snap/latest_build/linux/x86_64/snapteld"
+SNAPTEL_URL = "http://snap.ci.snap-telemetry.io/snap/latest_build/linux/x86_64/snaptel"
 
 
 def _non_block_read(output):
@@ -77,9 +77,9 @@ class Binary(object):
         return self._name
 
 
-class Snapd(Binary, threading.Thread):
+class Snapteld(Binary, threading.Thread):
     def __init__(self, url, location):
-        super(Snapd, self).__init__(url, location)
+        super(Snapteld, self).__init__(url, location)
         self.stdout = None
         self.stderr = None
         self.errors = []
@@ -89,18 +89,18 @@ class Snapd(Binary, threading.Thread):
 
     def run(self):
         cmd = '{} -t 0 -l 1 '.format(os.path.join(self.dir, self.name))
-        log.debug("starting snapd thread: {}".format(cmd))
+        log.debug("starting snapteld thread: {}".format(cmd))
         self._process = subprocess.Popen(cmd.split(), shell=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         while not self.stopped():
             out = _non_block_read(self._process.stderr)
-            if "snapd started" in out:
+            if "snapteld started" in out:
                 self._ready.set()
-                log.debug("snapd is ready")
+                log.debug("snapteld is ready")
             if "error" in out:
                 self.errors.append(out)
         if not self._process.poll():
             self._process.kill()
-        log.debug("exiting snapd thread")
+        log.debug("exiting snapteld thread")
 
     def stop(self):
         self._stop.set()
@@ -122,34 +122,34 @@ class Snapd(Binary, threading.Thread):
         self.stop()
 
 
-class Snapctl(Binary):
+class Snaptel(Binary):
     def __init__(self, url, location):
         Binary.__init__(self, url, location)
         self.errors = []
 
     def load_plugin(self, plugin):
         cmd = '{} plugin load {}'.format(os.path.join(self.dir, self.name), os.path.join(PLUGIN_DIR, plugin))
-        log.debug("snapctl load plugin {}".format(cmd))
+        log.debug("snaptel load plugin {}".format(cmd))
         out = self._start_process(cmd)
         log.debug("plugin loaded? {}".format("Plugin loaded" in out))
         return "Plugin loaded" in out
 
     def unload_plugin(self, plugin_type, plugin_name, plugin_version):
         cmd = '{} plugin unload {}:{}:{}'.format(os.path.join(self.dir, self.name), plugin_type, plugin_name, plugin_version)
-        log.debug("snapctl unload plugin {}".format(cmd))
+        log.debug("snaptel unload plugin {}".format(cmd))
         out = self._start_process(cmd)
         log.debug("plugin unloaded? {}".format("Plugin unloaded" in out))
         return "Plugin unloaded" in out
 
     def list_plugins(self):
         cmd = '{} plugin list'.format(os.path.join(self.dir, self.name))
-        log.debug("snapctl plugin list")
+        log.debug("snaptel plugin list")
         plugins = self._start_process(cmd).split('\n')[1:-1]
         return plugins
 
     def create_task(self, task):
         cmd = '{} task create -t {}'.format(os.path.join(self.dir, self.name), task)
-        log.debug("snapctl task create")
+        log.debug("snaptel task create")
         out = self._start_process(cmd).split('\n')
         # sleeping for 10 seconds so the task can do some work
         time.sleep(10)
@@ -164,7 +164,7 @@ class Snapctl(Binary):
 
     def stop_task(self, task_id):
         cmd = '{} task stop {}'.format(os.path.join(self.dir, self.name), task_id)
-        log.debug("snapctl task stop")
+        log.debug("snaptel task stop")
         out = self._start_process(cmd).split('\n')
         return "Task stopped" in out[0]
 
@@ -190,13 +190,13 @@ class Snapctl(Binary):
 
     def list_metrics(self):
         cmd = '{} metric list'.format(os.path.join(self.dir, self.name))
-        log.debug("snapctl metric list")
+        log.debug("snaptel metric list")
         metrics = self._start_process(cmd).split('\n')[1:-1]
         return metrics
 
     def metric_get(self, metric):
         cmd = '{} metric get -m {}'.format(os.path.join(self.dir, self.name), metric)
-        log.debug("snapctl metric get -m {}".format(metric))
+        log.debug("snaptel metric get -m {}".format(metric))
         # out = self._start_process(cmd).split('\n')[7:]
         out = self._start_process(cmd).split('\n')
         headers = map(lambda e: e.replace(" ", ""), filter(lambda e: e != "", out[0].split('\t')))
@@ -226,25 +226,25 @@ class Snapctl(Binary):
 
 class Binaries(object):
     def __init__(self):
-        self._snapd = None
-        self._snapctl = None
+        self._snapteld = None
+        self._snaptel = None
         self._plugins = []
 
     @property
-    def snapd(self):
-        return self._snapd
+    def snapteld(self):
+        return self._snapteld
 
-    @snapd.setter
-    def snapd(self, bin):
-        self._snapd = bin
+    @snapteld.setter
+    def snapteld(self, bin):
+        self._snapteld = bin
 
     @property
-    def snapctl(self):
-        return self._snapctl
+    def snaptel(self):
+        return self._snaptel
 
-    @snapctl.setter
-    def snapctl(self, bin):
-        self._snapctl = bin
+    @snaptel.setter
+    def snaptel(self, bin):
+        self._snaptel = bin
 
     @property
     def plugins(self):
@@ -255,7 +255,7 @@ class Binaries(object):
         self._plugins = bins
 
     def get_all_bins(self):
-        all_bins = [self.snapd, self.snapctl]
+        all_bins = [self.snapteld, self.snaptel]
         all_bins.extend(self._plugins)
         return all_bins
 
