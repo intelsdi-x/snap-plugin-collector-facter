@@ -47,16 +47,13 @@ import (
 	"strings"
 	"time"
 
+	"github.com/intelsdi-x/snap-plugin-lib-go/v1/plugin"
 	utils "github.com/intelsdi-x/snap-plugin-utilities/ns"
-	"github.com/intelsdi-x/snap/control/plugin"
-	"github.com/intelsdi-x/snap/control/plugin/cpolicy"
-	"github.com/intelsdi-x/snap/core"
 )
 
 const (
-	name       = "facter"
-	version    = 8
-	pluginType = plugin.CollectorPluginType
+	Name    = "facter"
+	Version = 9
 
 	// parts of returned namescape
 	vendor = "intel"
@@ -68,10 +65,6 @@ const (
 	// timeout we are ready to wait for external binary to gather the data
 	defaultFacterTimeout = 5 * time.Second
 )
-
-func Meta() *plugin.PluginMeta {
-	return plugin.NewPluginMeta(name, version, pluginType, []string{plugin.SnapGOBContentType}, []string{plugin.SnapGOBContentType})
-}
 
 /**********
  * Facter *
@@ -93,7 +86,7 @@ type Facter struct {
 }
 
 // make sure that we actually satisify requierd interface
-var _ plugin.CollectorPlugin = (*Facter)(nil)
+var _ plugin.Collector = (*Facter)(nil)
 
 // NewFacter constructs new Facter with default values
 func NewFacterCollector() *Facter {
@@ -107,7 +100,7 @@ func NewFacterCollector() *Facter {
 // ------------ Snap plugin interface implementation --------------
 
 // GetMetricTypes returns available metrics types
-func (f *Facter) GetMetricTypes(_ plugin.ConfigType) ([]plugin.MetricType, error) {
+func (f *Facter) GetMetricTypes(_ plugin.Config) ([]plugin.Metric, error) {
 
 	// facts composed of entries
 	facts, err := f.getFacts(
@@ -120,7 +113,7 @@ func (f *Facter) GetMetricTypes(_ plugin.ConfigType) ([]plugin.MetricType, error
 			// Facter cannot be found. Since this is called on load we should
 			// not send an error as loading a plugin should not fail based on
 			// whether or not a dynamic path is set.
-			return []plugin.MetricType{}, nil
+			return []plugin.Metric{}, nil
 		}
 		return nil, err
 	}
@@ -136,14 +129,14 @@ func (f *Facter) GetMetricTypes(_ plugin.ConfigType) ([]plugin.MetricType, error
 // Collect collects metrics from external binary a returns them in form
 // acceptable by Snap, only returns collects that were asked for and return nothing when asked for none
 // the order of requested and received metrics isn't guaranted
-func (f *Facter) CollectMetrics(metricTypes []plugin.MetricType) ([]plugin.MetricType, error) {
+func (f *Facter) CollectMetrics(metricTypes []plugin.Metric) ([]plugin.Metric, error) {
 
 	// parse and check requested names of metrics
 	// use set to avoid duplicates
 	set := make(map[string]struct{})
 	names := []string{}
 	for _, metricType := range metricTypes {
-		namespace := metricType.Namespace()
+		namespace := metricType.Namespace
 
 		err := validateNamespace(namespace)
 		if err != nil {
@@ -184,23 +177,19 @@ func (f *Facter) CollectMetrics(metricTypes []plugin.MetricType) ([]plugin.Metri
 	return metrics, nil
 }
 
-func (f *Facter) GetConfigPolicy() (*cpolicy.ConfigPolicy, error) {
-	c := cpolicy.New()
-	rule, _ := cpolicy.NewStringRule("name", false, "bob")
-	rule2, _ := cpolicy.NewStringRule("password", true)
-	p := cpolicy.NewPolicyNode()
-	p.Add(rule)
-	p.Add(rule2)
-	c.Add([]string{"intel", "facter", "foo"}, p)
-	return c, nil
+func (f *Facter) GetConfigPolicy() (plugin.ConfigPolicy, error) {
+	c := plugin.NewConfigPolicy()
+	c.AddNewStringRule([]string{"intel", "facter", "foo"}, "name", false, plugin.SetDefaultString("bob"))
+	c.AddNewStringRule([]string{"intel", "facter", "foo"}, "password", true)
+	return *c, nil
 }
 
 // ------------ helper functions --------------
 
 // parseFacts parses facts returned by facter and extracts metricTypes from it
-func parseFacts(f facts) ([]plugin.MetricType, error) {
+func parseFacts(f facts) ([]plugin.Metric, error) {
 
-	var metricTypes []plugin.MetricType
+	var metricTypes []plugin.Metric
 
 	// create types with given namespace
 	for name, value := range f {
@@ -211,7 +200,7 @@ func parseFacts(f facts) ([]plugin.MetricType, error) {
 			}
 			metricTypes = append(metricTypes, ms...)
 		} else {
-			metricType := *plugin.NewMetricType(createNamespace(name), time.Now(), nil, "", value)
+			metricType := plugin.Metric{Namespace: createNamespace(name), Timestamp: time.Now(), Data: value}
 			metricTypes = append(metricTypes, metricType)
 		}
 	}
@@ -220,9 +209,9 @@ func parseFacts(f facts) ([]plugin.MetricType, error) {
 }
 
 // createMetricsSubArray creates an array of metrics for map values returned by facter
-func createMetricsSubArray(name string, value map[string]interface{}) ([]plugin.MetricType, error) {
+func createMetricsSubArray(name string, value map[string]interface{}) ([]plugin.Metric, error) {
 
-	var ms []plugin.MetricType
+	var ms []plugin.Metric
 
 	namespaces := []string{}
 
@@ -234,7 +223,7 @@ func createMetricsSubArray(name string, value map[string]interface{}) ([]plugin.
 	for _, namespace := range namespaces {
 		ns := strings.Split(namespace, "/")
 		val := utils.GetValueByNamespace(value, ns[1:])
-		m := *plugin.NewMetricType(createNamespace(ns...), time.Now(), nil, "", val)
+		m := plugin.Metric{Namespace: createNamespace(ns...), Timestamp: time.Now(), Data: val}
 		ms = append(ms, m)
 	}
 
@@ -242,7 +231,7 @@ func createMetricsSubArray(name string, value map[string]interface{}) ([]plugin.
 }
 
 // validateNamespace checks namespace intel(vendor)/facter(prefix)/FACTNAME
-func validateNamespace(namespace core.Namespace) error {
+func validateNamespace(namespace plugin.Namespace) error {
 	if len(namespace) < 3 {
 		return errors.New(fmt.Sprintf("unknown metricType %s (should contain just 3 segments)", namespace))
 	}
@@ -258,9 +247,9 @@ func validateNamespace(namespace core.Namespace) error {
 
 // namspace returns namespace slice of strings
 // composed from: vendor, prefix and fact name
-func createNamespace(name ...string) core.Namespace {
+func createNamespace(name ...string) plugin.Namespace {
 	name = append([]string{vendor, prefix}, name...)
-	return core.NewNamespace(name...)
+	return plugin.NewNamespace(name...)
 }
 
 // helper type to deal with json values which additionally stores last update moment
