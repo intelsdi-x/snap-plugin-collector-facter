@@ -1,4 +1,4 @@
-// +build linux,medium
+// +build medium
 
 /*
 http://www.apache.org/licenses/LICENSE-2.0.txt
@@ -89,7 +89,7 @@ func TestGetFacts(t *testing.T) {
 			So(len(facts), ShouldEqual, 1)
 			fact, exist := facts["thereisnosuchfact"]
 			So(exist, ShouldEqual, true)
-			So(fact, ShouldBeBlank)
+			So(fact, ShouldBeEmpty)
 		})
 
 	})

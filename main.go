@@ -20,18 +20,14 @@ limitations under the License.
 package main
 
 import (
-	"os"
+
 	// Import the snap plugin library
-	"github.com/intelsdi-x/snap/control/plugin"
+	"github.com/intelsdi-x/snap-plugin-lib-go/v1/plugin"
 	// Import our collector plugin implementation
 	"github.com/intelsdi-x/snap-plugin-collector-facter/facter"
 )
 
 // plugin bootstrap
 func main() {
-	plugin.Start(
-		facter.Meta(),
-		facter.NewFacterCollector(),
-		os.Args[1],
-	)
+	plugin.StartCollector(facter.NewFacterCollector(), facter.Name, facter.Version)
 }

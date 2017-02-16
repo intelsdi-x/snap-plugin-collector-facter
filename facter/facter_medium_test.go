@@ -31,8 +31,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/intelsdi-x/snap/control/plugin"
-	"github.com/intelsdi-x/snap/core"
+	"github.com/intelsdi-x/snap-plugin-lib-go/v1/plugin"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -41,7 +40,7 @@ import (
 const someFact = "kernel"
 const someValue = "linux 1234"
 
-var existingNamespace = core.NewNamespace(vendor, prefix, someFact)
+var existingNamespace = plugin.NewNamespace(vendor, prefix, someFact)
 
 func TestFacterCollectMetrics(t *testing.T) {
 	Convey("TestFacterCollect tests", t, func() {
@@ -53,16 +52,16 @@ func TestFacterCollectMetrics(t *testing.T) {
 		}
 
 		Convey("asked for nothing returns nothing", func() {
-			metricTypes := []plugin.MetricType{}
+			metricTypes := []plugin.Metric{}
 			metrics, err := f.CollectMetrics(metricTypes)
 			So(err, ShouldBeNil)
 			So(metrics, ShouldBeEmpty)
 		})
 
 		Convey("asked for something returns something", func() {
-			metricTypes := []plugin.MetricType{
-				plugin.MetricType{
-					Namespace_: existingNamespace,
+			metricTypes := []plugin.Metric{
+				plugin.Metric{
+					Namespace: existingNamespace,
 				},
 			}
 			metrics, err := f.CollectMetrics(metricTypes)
@@ -72,16 +71,16 @@ func TestFacterCollectMetrics(t *testing.T) {
 
 			// check just one metric
 			metric := metrics[0]
-			So(metric.Namespace()[2].Value, ShouldResemble, someFact)
-			So(metric.Data().(string), ShouldEqual, someValue)
+			So(metric.Namespace[2].Value, ShouldResemble, someFact)
+			So(metric.Data.(string), ShouldEqual, someValue)
 		})
 
 		Convey("ask for inappriopriate metrics", func() {
 			Convey("wrong number of parts", func() {
 				_, err := f.CollectMetrics(
-					[]plugin.MetricType{
-						plugin.MetricType{
-							Namespace_: core.NewNamespace("where are my other parts"),
+					[]plugin.Metric{
+						plugin.Metric{
+							Namespace: plugin.NewNamespace("where are my other parts"),
 						},
 					},
 				)
@@ -91,9 +90,9 @@ func TestFacterCollectMetrics(t *testing.T) {
 
 			Convey("wrong vendor", func() {
 				_, err := f.CollectMetrics(
-					[]plugin.MetricType{
-						plugin.MetricType{
-							Namespace_: core.NewNamespace("nonintelvendor", prefix, someFact),
+					[]plugin.Metric{
+						plugin.Metric{
+							Namespace: plugin.NewNamespace("nonintelvendor", prefix, someFact),
 						},
 					},
 				)
@@ -103,9 +102,9 @@ func TestFacterCollectMetrics(t *testing.T) {
 
 			Convey("wrong prefix", func() {
 				_, err := f.CollectMetrics(
-					[]plugin.MetricType{
-						plugin.MetricType{
-							Namespace_: core.NewNamespace(vendor, "this is wrong prefix", someFact),
+					[]plugin.Metric{
+						plugin.Metric{
+							Namespace: plugin.NewNamespace(vendor, "this is wrong prefix", someFact),
 						},
 					},
 				)
@@ -126,15 +125,15 @@ func TestFacterInvalidBehavior(t *testing.T) {
 			return nil, errors.New("dummy error")
 		}
 
-		_, err := f.CollectMetrics([]plugin.MetricType{
-			plugin.MetricType{
-				Namespace_: existingNamespace,
+		_, err := f.CollectMetrics([]plugin.Metric{
+			plugin.Metric{
+				Namespace: existingNamespace,
 			},
 		},
 		)
 		So(err, ShouldNotBeNil)
 
-		_, err = f.GetMetricTypes(plugin.ConfigType{})
+		_, err = f.GetMetricTypes(plugin.Config{})
 		So(err, ShouldNotBeNil)
 	})
 	Convey("returns not as much values as asked", t, func() {
@@ -146,9 +145,9 @@ func TestFacterInvalidBehavior(t *testing.T) {
 			return nil, nil
 		}
 
-		_, err := f.CollectMetrics([]plugin.MetricType{
-			plugin.MetricType{
-				Namespace_: existingNamespace,
+		_, err := f.CollectMetrics([]plugin.Metric{
+			plugin.Metric{
+				Namespace: existingNamespace,
 			},
 		},
 		)
@@ -158,16 +157,16 @@ func TestFacterInvalidBehavior(t *testing.T) {
 
 }
 
-func TestFacterGetMetricsTypes(t *testing.T) {
+func TestFacterGetMetricTypesTypes(t *testing.T) {
 
 	Convey("GetMetricTypes functionallity", t, func() {
 
 		f := NewFacterCollector()
 		So(f, ShouldNotBeNil)
 
-		Convey("GetMetricsTypes returns no error", func() {
+		Convey("GetMetricTypesTypes returns no error", func() {
 			// executes without error
-			metricTypes, err := f.GetMetricTypes(plugin.ConfigType{})
+			metricTypes, err := f.GetMetricTypes(plugin.Config{})
 			So(err, ShouldBeNil)
 			Convey("metricTypesReply should contain more than zero metrics", func() {
 				So(metricTypes, ShouldNotBeEmpty)
@@ -175,11 +174,11 @@ func TestFacterGetMetricsTypes(t *testing.T) {
 
 			Convey("at least one metric contains metric namespace \"intel/facter/kernel\"", func() {
 
-				expectedNamespaceStr := existingNamespace.String()
+				expectedNamespaceStr := strings.Join(existingNamespace.Strings(), "/")
 
 				found := false
 				for _, metricType := range metricTypes {
-					if metricType.Namespace().String() == expectedNamespaceStr {
+					if strings.Join(metricType.Namespace.Strings(), "/") == expectedNamespaceStr {
 						found = true
 						break
 					}
@@ -193,7 +192,7 @@ func TestFacterGetMetricsTypes(t *testing.T) {
 				So(len(metricTypes), ShouldNotBeNil)
 				namespaces := []string{}
 				for _, m := range metricTypes {
-					namespaces = append(namespaces, strings.Join(m.Namespace().Strings(), "/"))
+					namespaces = append(namespaces, strings.Join(m.Namespace.Strings(), "/"))
 				}
 
 				So(namespaces, ShouldContain, "intel/facter/timezone")
