@@ -53,7 +53,7 @@ import (
 
 const (
 	Name    = "facter"
-	Version = 9
+	Version = 10
 
 	// parts of returned namescape
 	vendor = "intel"
