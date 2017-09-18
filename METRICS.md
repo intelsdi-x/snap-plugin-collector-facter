@@ -1,3 +1,5 @@
+# Snap collector plugin - facter
+
 ## Collected metrics
 
 This plugin has the ability to gather the following metrics:
