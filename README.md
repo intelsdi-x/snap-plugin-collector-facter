@@ -4,16 +4,16 @@ This plugin collects facts about nodes (systems) such as hardware details, netwo
 It's used in the [Snap framework](http://github.com:intelsdi-x/snap).
 
 1. [Getting Started](#getting-started)
-  * [System Requirements](#system-requirements)
-  * [Installation](#installation)
-  * [Configuration and Usage](configuration-and-usage)
+   * [System Requirements](#system-requirements)
+   * [Installation](#installation)
+   * [Configuration and Usage](configuration-and-usage)
 2. [Documentation](#documentation)
-  * [Collected Metrics](#collected-metrics)
-  * [Examples](#examples)
-  * [Roadmap](#roadmap)
+   * [Collected Metrics](#collected-metrics)
+   * [Examples](#examples)
+   * [Roadmap](#roadmap)
 3. [Community Support](#community-support)
 4. [Contributing](#contributing)
-5. [License](#license-and-authors)
+5. [License](#license)
 6. [Acknowledgements](#acknowledgements)
 
 ## Getting Started
@@ -133,7 +133,7 @@ We love contributions!
 There's more than one way to give back, from examples to blogs to code updates. See our recommended process in [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## License
-[Snap](http://github.com:intelsdi-x/snap), along with this plugin, is an Open Source software released under the Apache 2.0 [License](LICENSE).
+[Snap](http://github.com/intelsdi-x/snap), along with this plugin, is an Open Source software released under the Apache 2.0 [License](LICENSE).
 
 ## Acknowledgements
 * Author: [@ppalucki](https://github.com/ppalucki)
